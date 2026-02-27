@@ -1,0 +1,74 @@
+==========================================
+Regex with backticks in frontmatter (#34)
+==========================================
+
+---
+const titleHtml = post.data.title.replace(/`([^`]+)`/g, "<code>$1</code>");
+---
+
+<html />
+
+--------------------
+
+(document
+    (frontmatter
+        (frontmatter_js_block))
+    (element
+        (self_closing_tag
+            (tag_name))))
+
+========================================
+Regex with slash in character class
+========================================
+
+---
+const re = /[a-z/]+/g;
+---
+
+<html />
+
+--------------------
+
+(document
+    (frontmatter
+        (frontmatter_js_block))
+    (element
+        (self_closing_tag
+            (tag_name))))
+
+========================================
+Division operator does not break parsing
+========================================
+
+---
+const x = a / b;
+const y = c / d;
+---
+
+<html />
+
+--------------------
+
+(document
+    (frontmatter
+        (frontmatter_js_block))
+    (element
+        (self_closing_tag
+            (tag_name))))
+
+==========================================
+Regex in attribute expression
+==========================================
+
+<div class={value.replace(/`/g, "")} />
+
+--------------------
+
+(document
+    (element
+        (self_closing_tag
+            (tag_name)
+            (attribute
+                (attribute_name)
+                (attribute_interpolation
+                    (attribute_js_expr))))))

@@ -213,6 +213,28 @@ static inline void scan_js_string(TSLexer *lexer) {
 }
 
 
+static inline void scan_js_regex(TSLexer *lexer) {
+    bool in_char_class = false;
+    while (lexer->lookahead != '\0' && lexer->lookahead != '\n') {
+        if (lexer->lookahead == '\\') {
+            lexer->advance(lexer, false);
+            if (lexer->lookahead == '\0' || lexer->lookahead == '\n') break;
+        } else if (lexer->lookahead == '[' && !in_char_class) {
+            in_char_class = true;
+        } else if (lexer->lookahead == ']' && in_char_class) {
+            in_char_class = false;
+        } else if (lexer->lookahead == '/' && !in_char_class) {
+            lexer->advance(lexer, false);
+            // consume regex flags (e.g. /pattern/gi)
+            while (lexer->lookahead >= 'a' && lexer->lookahead <= 'z') {
+                lexer->advance(lexer, false);
+            }
+            return;
+        }
+        lexer->advance(lexer, false);
+    }
+}
+
 static inline void scan_js_expr_with_delimiter(TSLexer *lexer, enum RawTextEndType end_type) {
     lexer->mark_end(lexer);
     // `delimiter_index` is only used when `end_type == EndFrontmatter`.
@@ -270,12 +292,14 @@ static inline void scan_js_expr_with_delimiter(TSLexer *lexer, enum RawTextEndTy
                 continue;
             }
             if (lexer->lookahead == '/') {
-                // comment?
+                // comment or regex?
                 lexer->advance(lexer, false);
                 if (lexer->lookahead == '/') {
                     in_comment = SingleLine;
                 } else if (lexer->lookahead == '*') {
                     in_comment = MultiLine;
+                } else {
+                    scan_js_regex(lexer);
                 }
                 continue;
             }
