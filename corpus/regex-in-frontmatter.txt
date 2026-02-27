@@ -72,3 +72,39 @@ Regex in attribute expression
                 (attribute_name)
                 (attribute_interpolation
                     (attribute_js_expr))))))
+
+==========================================
+Division operator in attribute expression
+==========================================
+
+<div x={a / b} />
+
+--------------------
+
+(document
+    (element
+        (self_closing_tag
+            (tag_name)
+            (attribute
+                (attribute_name)
+                (attribute_interpolation
+                    (attribute_js_expr))))))
+
+==========================================
+Regex with leading ] in character class
+==========================================
+
+---
+const re = /[]/]/;
+---
+
+<html />
+
+--------------------
+
+(document
+    (frontmatter
+        (frontmatter_js_block))
+    (element
+        (self_closing_tag
+            (tag_name))))

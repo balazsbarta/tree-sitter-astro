@@ -215,14 +215,25 @@ static inline void scan_js_string(TSLexer *lexer) {
 
 static inline void scan_js_regex(TSLexer *lexer) {
     bool in_char_class = false;
+    bool at_class_start = false;
+    unsigned brace_depth = 0;
     while (lexer->lookahead != '\0' && lexer->lookahead != '\n') {
         if (lexer->lookahead == '\\') {
             lexer->advance(lexer, false);
             if (lexer->lookahead == '\0' || lexer->lookahead == '\n') break;
+            at_class_start = false;
         } else if (lexer->lookahead == '[' && !in_char_class) {
             in_char_class = true;
+            at_class_start = true;
         } else if (lexer->lookahead == ']' && in_char_class) {
-            in_char_class = false;
+            if (at_class_start) {
+                // Leading ] in a character class is literal (e.g., /[]/]/)
+                at_class_start = false;
+            } else {
+                in_char_class = false;
+            }
+        } else if (lexer->lookahead == '^' && at_class_start) {
+            // Negation marker [^ doesn't end "class start" state
         } else if (lexer->lookahead == '/' && !in_char_class) {
             lexer->advance(lexer, false);
             // consume regex flags (e.g. /pattern/gi)
@@ -230,6 +241,18 @@ static inline void scan_js_regex(TSLexer *lexer) {
                 lexer->advance(lexer, false);
             }
             return;
+        } else if (lexer->lookahead == '{' && !in_char_class) {
+            brace_depth++;
+            at_class_start = false;
+        } else if (lexer->lookahead == '}' && !in_char_class) {
+            if (brace_depth == 0) {
+                // Unmatched } — likely end of attribute expression, not regex
+                return;
+            }
+            brace_depth--;
+            at_class_start = false;
+        } else {
+            at_class_start = false;
         }
         lexer->advance(lexer, false);
     }
